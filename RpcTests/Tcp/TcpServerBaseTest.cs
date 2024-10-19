@@ -83,6 +83,7 @@ namespace Rpc.Tcp.Tests
 
 			_server.OnLine();
 			_client.Connect();
+			SpinWait.SpinUntil(() => _server.ListClient().Length > 0, 1000);
 		}
 
 		private void _client_DataIn(object sender, DataInArgs e)
@@ -110,8 +111,62 @@ namespace Rpc.Tcp.Tests
 			var msg = Encoding.UTF8.GetBytes("Hello");
 			_client.Send(msg);
 
-			var ret = SpinWait.SpinUntil(() => ServerQueue.Count >= 1,1000);
+			var ret = SpinWait.SpinUntil(() => ServerQueue.Count >= 1, 1000);
 			Assert.IsTrue(ret);
+		}
+
+		[TestMethod()]
+		public void TwoClientConnectTest()
+		{
+			using (var client2 = new TcpClient())
+			{
+				client2.Connect();
+				var ret = SpinWait.SpinUntil(() => _server.ListClient().Length == 2, 1000);
+				Assert.IsTrue(ret);
+			}
+		}
+		[TestMethod()]
+		public void TwoClientSendTest()
+		{
+			using (var client2 = new TcpClient())
+			{
+				client2.Connect();
+				var msg = Encoding.UTF8.GetBytes("Hello");
+				_client.Send(msg);
+				Thread.Sleep(100);
+				client2.Send(msg);
+
+				var ret = SpinWait.SpinUntil(() => ServerQueue.Count >= 2, 1000);
+				Assert.IsTrue(ret);
+			}
+		}
+		[TestMethod()]
+		public void SendServerSendTest()
+		{
+			var msg = Encoding.UTF8.GetBytes("Hello");
+			var firstClient = _server.ListClient().First();
+			_server.Send(firstClient, msg);
+
+			var ret = SpinWait.SpinUntil(() => ClientQueue.Count >= 1, 1000);
+			Assert.IsTrue(ret);
+		}
+		[TestMethod()]
+		public void TestServerSendToTwoClient()
+		{
+			using (var client = new TcpClient())
+			{
+				client.Connect();
+				client.DataIn += _client_DataIn;
+
+				var msg = Encoding.UTF8.GetBytes("Hello");
+				var firstClient = _server.ListClient().First();
+				var secondClient = _server.ListClient().Skip(1).First();
+				_server.Send(firstClient, msg);
+				_server.Send(secondClient, msg);
+
+				var ret = SpinWait.SpinUntil(() => ClientQueue.Count >= 2, 1000);
+				Assert.IsTrue(ret);
+			}
 		}
 	}
 }

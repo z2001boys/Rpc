@@ -8,6 +8,6 @@ namespace Rpc.Tcp
 {
 	public class TcpConst
 	{
-		public int BufferSize { get; set; } = 1024;
+		public static int BufferSize { get; set; } = 1024;
 	}
 }

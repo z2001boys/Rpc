@@ -23,13 +23,13 @@ namespace Rpc.Tcp
 		/// 接收資料的buffer大小
 		/// 越小越快，但是會增加cpu使用率
 		/// </summary>
-		public int ReceiveBufferSize { get; set; } = 1024;
+		public int ReceiveBufferSize { get; set; } = TcpConst.BufferSize;
 		private Thread _litsenerThread;
 
 		/// <summary>
 		/// 建構子
 		/// </summary>
-		public TcpServer(string name="UnNamed")
+		public TcpServer(string name = "UnNamed")
 		{
 			Name = name;
 		}
@@ -193,6 +193,12 @@ namespace Rpc.Tcp
 		public void Send(IPEndPoint remoteEndPoint, byte[] data)
 		{
 			var client = Clients.First(c => c.Ip == remoteEndPoint.Address.ToString() && c.Port == remoteEndPoint.Port);
+			client.Send(data);
+		}
+
+		public void Send(Guid id, byte[] data)
+		{
+			var client = Clients.First(c => c.Id == id);
 			client.Send(data);
 		}
 
