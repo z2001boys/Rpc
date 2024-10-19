@@ -217,6 +217,9 @@ namespace Rpc.Tcp
 		}
 	}
 
+	/// <summary>
+	/// info of socket
+	/// </summary>
 	public class SocketInfoArgs
 	{
 		public Socket Socket;
