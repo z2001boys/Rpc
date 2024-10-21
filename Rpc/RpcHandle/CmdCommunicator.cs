@@ -1,23 +1,30 @@
 ﻿using Rpc.RpcHandle;
+using Rpc.Tcp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle
 {
-	internal class SocketLayer
+	internal class CmdCommunicator : Communicator
 	{
 		private byte[] _currentData = null;
 		PackHeader _currentHeader = new PackHeader();
 		private readonly DataPipe _pipe = new DataPipe();
 		static readonly int SizeOfHeader = Marshal.SizeOf<PackHeader>();
 
-		public SocketLayer()
+		public CmdCommunicator(Socket s, int reciveSize) : base(s, reciveSize)
 		{
+			this.DataIn += CmdCommunicator_DataIn;
+		}
 
+		private void CmdCommunicator_DataIn(object sender, DataInArgs e)
+		{
+			AddData(e.Data);
 		}
 
 		internal void AddData(byte[] data)

@@ -26,6 +26,8 @@ namespace Rpc.Tcp
 		public int ReceiveBufferSize { get; set; } = TcpConst.BufferSize;
 		private Thread _litsenerThread;
 
+		public event EventHandler<CreateCommunicatorArgs> CommunicationCreating;
+
 		/// <summary>
 		/// 建構子
 		/// </summary>
@@ -43,13 +45,15 @@ namespace Rpc.Tcp
 				{
 					var newSocket = this._mainSocket.Accept();
 					EndPoint endPoint = newSocket.RemoteEndPoint;
-					//建立一個新的ClientInfo物件，並且將此一客戶端的Socket、IP位址、Port號碼等資訊存入
-					Communicator socketInfo = new Communicator(ReceiveBufferSize)
+					//外部詢問
+					var createArgs = new CreateCommunicatorArgs()
 					{
 						Socket = newSocket,
-						Ip = ((IPEndPoint)endPoint).Address.ToString(),
-						Port = ((IPEndPoint)endPoint).Port,
+						ReceiveBufferSize = ReceiveBufferSize
 					};
+					CommunicationCreating?.Invoke(this, createArgs);
+					//建立一個新的ClientInfo物件，並且將此一客戶端的Socket、IP位址、Port號碼等資訊存入
+					Communicator socketInfo = createArgs.Communicator ?? new Communicator(newSocket, ReceiveBufferSize);
 					//設定ClientInfo物件的DataIn事件處理函式
 					socketInfo.DataIn += (sender, args) => DataIn?.Invoke(sender, args);
 					//設定ClientInfo物件的Disconnected事件處理函式
@@ -60,7 +64,7 @@ namespace Rpc.Tcp
 					//引發ClientConnected事件
 					ClientConnected?.Invoke(this, new SocketInfoArgs()
 					{
-						Socket = socketInfo.Socket,
+						Socket = socketInfo.SocketHandle,
 						Id = socketInfo.Id,
 						Ip = socketInfo.Ip,
 						Port = socketInfo.Port
@@ -155,7 +159,7 @@ namespace Rpc.Tcp
 			lock (Clients) Clients.Remove(client);
 			ClientDisConnected?.Invoke(this, new SocketInfoArgs()
 			{
-				Socket = client.Socket,
+				Socket = client.SocketHandle,
 				Id = client.Id,
 				Ip = client.Ip,
 				Port = client.Port
@@ -217,6 +221,13 @@ namespace Rpc.Tcp
 		}
 	}
 
+	public class CreateCommunicatorArgs
+	{
+		public Socket Socket;
+		public int ReceiveBufferSize;
+		public Communicator Communicator;
+	}
+
 	/// <summary>
 	/// info of socket
 	/// </summary>
@@ -237,15 +248,41 @@ namespace Rpc.Tcp
 		/// <summary>
 		/// socket實體
 		/// </summary>
-		public Socket Socket;
+		public Socket SocketHandle;
 		/// <summary>
 		/// ip
 		/// </summary>
-		public string Ip;
+		public string Ip
+		{
+			get
+			{
+				if (SocketHandle.RemoteEndPoint is IPEndPoint ep)
+				{
+					return ep.Address.ToString();
+				}
+				else
+				{
+					return string.Empty;
+				}
+			}
+		}
 		/// <summary>
 		/// port
 		/// </summary>
-		public int Port;
+		public int Port
+		{
+			get
+			{
+				if (SocketHandle.RemoteEndPoint is IPEndPoint ep)
+				{
+					return ep.Port;
+				}
+				else
+				{
+					return 0;
+				}
+			}
+		}
 		/// <summary>
 		/// 資料輸入
 		/// </summary>
@@ -267,11 +304,18 @@ namespace Rpc.Tcp
 		/// 建構子
 		/// </summary>
 		/// <param name="receiveBufferSize">預設buffer size</param>
-		public Communicator(int receiveBufferSize)
+		public Communicator(
+			Socket s,
+			int receiveBufferSize)
 		{
+			SocketHandle = s;
+			
+
 			_buffer = new byte[receiveBufferSize];
 			_workThread = new Thread(ThreadJob);
 		}
+
+
 
 		private void ThreadJob()
 		{
@@ -279,7 +323,7 @@ namespace Rpc.Tcp
 			{
 				try
 				{
-					var length = Socket.Receive(_buffer);
+					var length = SocketHandle.Receive(_buffer);
 					if (length == 0)
 					{
 						Finalized = true;
@@ -293,7 +337,7 @@ namespace Rpc.Tcp
 						var args = new DataInArgs
 						{
 							Id = this.Id,
-							RemoteEndPoint = (IPEndPoint)Socket.RemoteEndPoint,
+							RemoteEndPoint = (IPEndPoint)SocketHandle.RemoteEndPoint,
 							Data = new byte[length]
 						};
 						Array.Copy(_buffer, args.Data, length);
@@ -327,19 +371,20 @@ namespace Rpc.Tcp
 		public void Send(byte[] data)
 		{
 			if (Finalized == false)
-				Socket.Send(data);
+				lock (this)
+					SocketHandle.Send(data);
 		}
 
 		/// <summary>
 		/// 釋放物件
 		/// </summary>
-		public void Dispose()
+		public virtual void Dispose()
 		{
 			//shutdown and dispose if not finalized
 			if (!Finalized)
 			{
-				Socket.Shutdown(SocketShutdown.Both);
-				Socket.Dispose();
+				SocketHandle.Shutdown(SocketShutdown.Both);
+				SocketHandle.Dispose();
 			}
 			var ret = _workThread?.Join(1000);
 			if (ret == false)

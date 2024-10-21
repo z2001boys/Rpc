@@ -8,14 +8,16 @@ using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle
 {
-	internal class SerializeLayer
+	internal class Serilaizer
 	{
 		private readonly List<MethodInfo> methods;
 
-		public SerializeLayer(List<MethodInfo> methods)
+		public Serilaizer(List<MethodInfo> methods)
 		{
 			this.methods = methods;
 		}
+
+
 
 		public static byte[] Serialize(PackHeader header, object[] args)
 		{

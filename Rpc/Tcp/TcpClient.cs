@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,24 +12,26 @@ namespace Rpc.Tcp
 {
 	public class TcpClient : ITcpClient
 	{
-		private Communicator _connection;
+		protected Communicator Com;
 
 		public SocketInfoArgs GetSocketInfo()
 		{
-			if (_connection == null)
+			if (Com == null)
 				return null;
 			return new SocketInfoArgs()
 			{
-				Id = _connection.Id,
-				Socket = _connection.Socket,
-				Ip = _connection.Ip,
-				Port = _connection.Port
+				Id = Com.Id,
+				Socket = Com.SocketHandle,
+				Ip = Com.Ip,
+				Port = Com.Port
 			};
 		}
 		public IPAddress Ip { get; set; } = IPAddress.Parse("127.0.0.1");
 		public int Port { get; set; } = 50000;
-		public bool IsConnect => _connection != null;
+		public bool IsConnect => Com != null;
 		public int ReadBufferSize { get; set; } = TcpConst.BufferSize;
+
+		public event EventHandler<CreateCommunicatorArgs> CommunicationCreating;
 
 		public virtual void Connect()
 		{
@@ -36,22 +39,28 @@ namespace Rpc.Tcp
 				return;
 			lock (this)
 			{
-				_connection = new Communicator(ReadBufferSize);
-				_connection.Disconnected += Connection_Disconnected;
-				_connection.DataIn += Connection_DataIn;
-				_connection.Ip = Ip.ToString();
-				_connection.Port = Port;
-				_connection.Socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				//外部詢問
+				var createArgs = new CreateCommunicatorArgs()
+				{
+					Socket = socket,
+					ReceiveBufferSize = ReadBufferSize
+				};
+				CommunicationCreating?.Invoke(this, createArgs);
+				//建立一個新的ClientInfo物件，並且將此一客戶端的Socket、IP位址、Port號碼等資訊存入
+				Com = createArgs.Communicator ?? new Communicator(socket, ReadBufferSize);				
+				Com.Disconnected += Connection_Disconnected;
+				Com.DataIn += Connection_DataIn;
 				try
 				{
-					_connection.Socket.Connect(Ip, Port);
+					Com.SocketHandle.Connect(Ip, Port);
 				}
 				catch
 				{
-					_connection = null;
+					Com = null;
 				}
 
-				_connection?.WaitForData();
+				Com?.WaitForData();
 
 			}
 		}
@@ -63,8 +72,8 @@ namespace Rpc.Tcp
 
 		private void Connection_Disconnected(object sender, EventArgs e)
 		{
-			var tmp = _connection;
-			_connection = null;
+			var tmp = Com;
+			Com = null;
 			Disconnected?.Invoke(this, null);
 			tmp.Dispose();
 
@@ -75,14 +84,14 @@ namespace Rpc.Tcp
 		{
 			if (IsConnect == false)
 				return;
-			_connection.Dispose();
+			Com.Dispose();
 		}
 
 		public void Send(byte[] data)
 		{
 			if (IsConnect == false)
 				return;
-			_connection.Send(data);
+			Com.Send(data);
 		}
 
 		public event EventHandler<DataInArgs> DataIn;

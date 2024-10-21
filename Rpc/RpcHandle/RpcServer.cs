@@ -15,47 +15,26 @@ namespace Rpc.RpcHandle
 		List<MethodInfo> _methods;
 		public RpcServer(ServerContract serverHandle)
 		{
-			this.ClientConnected += RpcServer_ClientConnected;
-			this.ClientDisConnected += RpcServer_ClientDisConnected;
+
 			_methods = Util.Util.GetOperationContractMethods(typeof(ServerContract));
 			ServerHandle = serverHandle;
-		}
 
-		private void RpcServer_ClientDisConnected(object sender, SocketInfoArgs e)
-		{
-			var communicator = GetCommunicator(e.Id);
-			lock (_commandProcesses)
+			this.CommunicationCreating += (ss, ee) =>
 			{
-				var commandProcess = _commandProcesses.FirstOrDefault(x => x.Id == e.Id);
-				if (commandProcess != null)
-				{
-					commandProcess.Dispose();
-					_commandProcesses.Remove(commandProcess);
-				}
-			}
+				var com = new CommandReciver<ServerContract>(serverHandle, _methods, ee.Socket, ee.ReceiveBufferSize);
+				ee.Communicator = com;
+			};
 
 		}
 
-		private List<CommandProcess<ServerContract>> _commandProcesses = new List<CommandProcess<ServerContract>>();
+
+
+		private List<CommandReciver<ServerContract>> _commandProcesses = new List<CommandReciver<ServerContract>>();
 
 		public ServerContract ServerHandle { get; }
 
-		/// <summary>
-		/// 這個function是由accept thread呼叫的，所以不用擔心thread safe的問題
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void RpcServer_ClientConnected(object sender, SocketInfoArgs e)
-		{
-			var communicator = GetCommunicator(e.Id);
-			var newCommandProcess = new CommandProcess<ServerContract>(ServerHandle, _methods, communicator);
-			lock(_commandProcesses)
-			{
-				_commandProcesses.Add(newCommandProcess);
-			}
-		}
 
-		Communicator GetCommunicator(Guid id)
+		protected Communicator GetCommunicator(Guid id)
 		{
 			return Clients.FirstOrDefault(x => x.Id == id);
 		}
