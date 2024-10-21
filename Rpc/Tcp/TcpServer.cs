@@ -326,7 +326,8 @@ namespace Rpc.Tcp
 		/// <param name="data"></param>
 		public void Send(byte[] data)
 		{
-			Socket.Send(data);
+			if (Finalized == false)
+				Socket.Send(data);
 		}
 
 		/// <summary>

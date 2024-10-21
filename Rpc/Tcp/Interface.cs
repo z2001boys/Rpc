@@ -60,6 +60,7 @@ namespace Rpc.Tcp
         /// </summary>
         event EventHandler<DataInArgs> DataIn;
 
+
         /// <summary>
         /// log
         /// </summary>

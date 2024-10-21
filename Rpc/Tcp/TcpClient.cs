@@ -30,7 +30,7 @@ namespace Rpc.Tcp
 		public bool IsConnect => _connection != null;
 		public int ReadBufferSize { get; set; } = TcpConst.BufferSize;
 
-		public void Connect()
+		public virtual void Connect()
 		{
 			if (IsConnect)
 				return;
