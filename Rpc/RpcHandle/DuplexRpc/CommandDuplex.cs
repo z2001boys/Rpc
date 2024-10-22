@@ -11,17 +11,30 @@ using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle.DuplexRpc
 {
+	/// <summary>
+	/// a internal class for duplex command
+	/// </summary>
+	/// <typeparam name="TServer"></typeparam>
+	/// <typeparam name="TCallBack"></typeparam>
 	internal class CommandDuplex<TServer, TCallBack> : CommandServer<TServer>, IContext
 	{
 
 		CommandClient<TCallBack> _client;
 
-		public CommandDuplex(TServer serverHandle,
+		/// <summary>
+		/// command process for duplex
+		/// </summary>
+		/// <param name="serverHandle">server's handle</param>
+		/// <param name="methodInfo">methods</param>
+		/// <param name="so">new socket</param>
+		/// <param name="receiverSize">socket receive size</param>
+		public CommandDuplex(
+			TServer serverHandle,
 			List<MethodInfo> methodInfo,
-			Socket s,
-			int receiverSize) : base(serverHandle, methodInfo, s, receiverSize)
+			Socket so,
+			int receiverSize) : base(serverHandle, methodInfo, so, receiverSize)
 		{
-			_client = new CommandClient<TCallBack>(s, receiverSize);
+			_client = new CommandClient<TCallBack>(so, receiverSize);
 			this.PackIn += (ss, ee) => _client.OnPackIn(ss, ee);
 		}
 

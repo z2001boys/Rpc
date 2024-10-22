@@ -38,7 +38,7 @@ namespace Rpc.RpcHandle
 			}
 		}
 
-		protected ProxyProcessor ProxyHandle { get; private set; }
+		internal ProxyProcessor ProxyHandle { get; private set; }
 		public TCmd Proxy => (TCmd)ProxyHandle.GetTransparentProxy();
 
 

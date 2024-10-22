@@ -29,7 +29,6 @@ namespace Rpc.RpcHandle.Tests
 
 			server.Dispose();
 			client.Dispose();
-
 		}
 
 		[TestMethod()]

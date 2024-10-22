@@ -33,10 +33,5 @@ namespace Rpc.RpcHandle
 
 		public ServerContract ServerHandle { get; }
 
-
-		protected Communicator GetCommunicator(Guid id)
-		{
-			return Clients.FirstOrDefault(x => x.Id == id);
-		}
 	}
 }

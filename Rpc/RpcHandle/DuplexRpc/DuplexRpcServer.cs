@@ -8,6 +8,11 @@ using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle.DuplexRpc
 {
+	/// <summary>
+	/// duplex rpc server
+	/// </summary>
+	/// <typeparam name="TServer"></typeparam>
+	/// <typeparam name="TServerCallBack"></typeparam>
 	public class DuplexRpcServer<TServer, TServerCallBack> : RpcServer<TServer>
 	{
 

@@ -24,7 +24,7 @@ namespace Rpc.Tcp.Tests
 		public void OnLineTest()
 		{
 			TcpServer server = new TcpServer("Test");
-			server.OnLine();
+			server.OnLine();			
 			server.Dispose();
 
 		}
@@ -58,6 +58,29 @@ namespace Rpc.Tcp.Tests
 
 				}
 			}
+		}
+
+		[TestMethod]
+		public void TestServerOfflineWithClient()
+		{
+			using (var server = new TcpServer("Test"))
+			{
+				using (var client = new TcpClient())
+				{
+					server.OnLine();
+					client.Connect();
+
+					Assert.IsTrue(client.IsConnect);
+					var ret = SpinWait.SpinUntil(() => server.ListClient().Length > 0, 1000);
+					Assert.IsTrue(ret);
+
+					server.OffLine();
+					ret = SpinWait.SpinUntil(() => !client.IsConnect, 1000);
+					Assert.IsTrue(ret);					
+				}
+			}
+
+
 		}
 
 

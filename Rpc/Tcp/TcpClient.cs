@@ -12,7 +12,7 @@ namespace Rpc.Tcp
 {
 	public class TcpClient : ITcpClient
 	{
-		protected Communicator Com;
+		internal Communicator Com;
 
 		public SocketInfoArgs GetSocketInfo()
 		{
@@ -48,7 +48,7 @@ namespace Rpc.Tcp
 				};
 				CommunicationCreating?.Invoke(this, createArgs);
 				//建立一個新的ClientInfo物件，並且將此一客戶端的Socket、IP位址、Port號碼等資訊存入
-				Com = createArgs.Communicator ?? new Communicator(socket, ReadBufferSize);				
+				Com = createArgs.Communicator ?? new Communicator(socket, ReadBufferSize);
 				Com.Disconnected += Connection_Disconnected;
 				Com.DataIn += Connection_DataIn;
 				try

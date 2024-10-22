@@ -36,12 +36,15 @@ namespace RpcTests.RpcDuplex
 
 		}
 
+		
+
 	}
 
 	public interface TestContract
 	{
 		[OperationContract]
 		int Add(int a, int b);
+		
 	}
 
 	public interface TestContractCallback

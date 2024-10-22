@@ -18,7 +18,7 @@ namespace Rpc.Tcp
 		/// <summary>
 		/// 已經連線的client
 		/// </summary>
-		protected List<Communicator> Clients = new List<Communicator>();
+		internal List<Communicator> Clients = new List<Communicator>();
 		/// <summary>
 		/// 接收資料的buffer大小
 		/// 越小越快，但是會增加cpu使用率
