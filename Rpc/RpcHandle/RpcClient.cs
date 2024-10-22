@@ -27,7 +27,7 @@ namespace Rpc.RpcHandle
 			//掛上行為
 			this.CommunicationCreating += (ss, ee) =>
 			{
-				var com = new CommandSender<TServer>(ee.Socket, ee.ReceiveBufferSize);
+				var com = new CommandClient<TServer>(ee.Socket, ee.ReceiveBufferSize);
 				com.ProcessTimeOutMs = this.ProcessTimeOutMs;
 				ee.Communicator = com;
 			};
@@ -44,7 +44,7 @@ namespace Rpc.RpcHandle
 				throw new Exception("Not connected");
 			if(this.Com==null)
 				throw new Exception("Communicator not created");
-			if(Com is CommandSender<TServer> senderCom)
+			if(Com is CommandClient<TServer> senderCom)
 			{
 				senderCom.Call(e);
 			}
@@ -62,7 +62,7 @@ namespace Rpc.RpcHandle
 			{
 				if (value == _timeOutMs) return;
 				_timeOutMs = value;
-				if (Com is CommandSender<TServer> senderCom)
+				if (Com is CommandClient<TServer> senderCom)
 				{
 					senderCom.ProcessTimeOutMs = value;
 				}

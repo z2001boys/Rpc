@@ -75,9 +75,10 @@
   <ItemGroup>
     <Compile Include="PackLayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RpcHandle\CommandReciver.cs" />
-    <Compile Include="RpcHandle\CommandSender.cs" />
+    <Compile Include="RpcHandle\CommandServer.cs" />
+    <Compile Include="RpcHandle\CommandClient.cs" />
     <Compile Include="RpcHandle\DataPipe.cs" />
+    <Compile Include="RpcHandle\DuplexRpc\CommandDuplex.cs" />
     <Compile Include="RpcHandle\DuplexRpc\DuplexRpcClient.cs" />
     <Compile Include="RpcHandle\DuplexRpc\DuplexRpcServer.cs" />
     <Compile Include="RpcHandle\ISimpleProxy.cs" />

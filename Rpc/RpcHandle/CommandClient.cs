@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle
 {
-	internal class CommandSender<TCmd> : CmdCommunicator
+	internal class CommandClient<TCmd> : CmdCommunicator
 	{
 		public int ProcessTimeOutMs { get; set; } = 10000;
 
@@ -39,7 +39,7 @@ namespace Rpc.RpcHandle
 		}
 
 
-		public CommandSender(Socket s, int receiveBufferSize) : base(s, receiveBufferSize)
+		public CommandClient(Socket s, int receiveBufferSize) : base(s, receiveBufferSize)
 		{
 			_methods = Util.Util.GetOperationContractMethods(typeof(TCmd));
 

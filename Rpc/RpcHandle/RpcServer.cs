@@ -19,17 +19,17 @@ namespace Rpc.RpcHandle
 			_methods = Util.Util.GetOperationContractMethods(typeof(ServerContract));
 			ServerHandle = serverHandle;
 
-			this.CommunicationCreating += (ss, ee) =>
-			{
-				var com = new CommandReciver<ServerContract>(serverHandle, _methods, ee.Socket, ee.ReceiveBufferSize);
-				ee.Communicator = com;
-			};
+			this.CommunicationCreating += RpcServer_CommunicationCreating;
 
 		}
 
+		internal virtual void RpcServer_CommunicationCreating(object sender, CreateCommunicatorArgs args)
+		{
+			var com = new CommandServer<ServerContract>(ServerHandle, _methods, args.Socket, args.ReceiveBufferSize);
+			args.Communicator = com;
+		}
 
-
-		private List<CommandReciver<ServerContract>> _commandProcesses = new List<CommandReciver<ServerContract>>();
+		private List<CommandServer<ServerContract>> _commandProcesses = new List<CommandServer<ServerContract>>();
 
 		public ServerContract ServerHandle { get; }
 

@@ -15,14 +15,14 @@ using System.Net.Sockets;
 
 namespace Rpc.RpcHandle
 {
-	internal class CommandReciver<TServer> : CmdCommunicator, IDisposable
+	internal class CommandServer<TServer> : CmdCommunicator, IDisposable
 	{
 		private readonly TServer _serverHandle;
 		private readonly List<MethodInfo> _methods;						
 		private Threader _threader;//記得釋放
 		public event EventHandler Disposing;
 
-		public CommandReciver(TServer serverHandle, List<MethodInfo> methods,
+		public CommandServer(TServer serverHandle, List<MethodInfo> methods,
 			Socket s, int reciverSize) : base(s, reciverSize)
 		{
 			this._serverHandle = serverHandle;
