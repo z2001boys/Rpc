@@ -12,11 +12,11 @@ namespace Rpc.RpcHandle
 {
 	public class RpcServer<ServerContract> : TcpServer
 	{
-		List<MethodInfo> _methods;
+		internal List<MethodInfo> ServerMethods;
 		public RpcServer(ServerContract serverHandle)
 		{
 
-			_methods = Util.Util.GetOperationContractMethods(typeof(ServerContract));
+			ServerMethods = Util.Util.GetOperationContractMethods(typeof(ServerContract));
 			ServerHandle = serverHandle;
 
 			this.CommunicationCreating += RpcServer_CommunicationCreating;
@@ -25,7 +25,7 @@ namespace Rpc.RpcHandle
 
 		internal virtual void RpcServer_CommunicationCreating(object sender, CreateCommunicatorArgs args)
 		{
-			var com = new CommandServer<ServerContract>(ServerHandle, _methods, args.Socket, args.ReceiveBufferSize);
+			var com = new CommandServer<ServerContract>(ServerHandle, ServerMethods, args.Socket, args.ReceiveBufferSize);
 			args.Communicator = com;
 		}
 

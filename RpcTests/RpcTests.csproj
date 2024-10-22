@@ -90,6 +90,7 @@
   <ItemGroup>
     <Compile Include="MessagePackTest\MessagePackTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RpcDuplex\RpcDuplexClass.cs" />
     <Compile Include="RpcHandle\RpcServerTests.cs" />
     <Compile Include="Tcp\TcpServerBaseTest.cs" />
   </ItemGroup>

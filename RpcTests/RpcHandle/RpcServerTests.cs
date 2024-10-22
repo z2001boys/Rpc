@@ -25,6 +25,7 @@ namespace Rpc.RpcHandle.Tests
 			client.ProcessTimeOutMs = 9999999;
 			client.Proxy.TestNoReturn(testData);
 			client.Proxy.TestWithReturn(testData);
+			client.Proxy.TestSendEnum(TestEnum.A);
 
 			server.Dispose();
 			client.Dispose();
@@ -77,6 +78,13 @@ namespace Rpc.RpcHandle.Tests
 		void TestNoReturn(TestClass1 data);
 		[OperationContract]
 		bool TestWithReturn(TestClass1 data);
+		[OperationContract]
+		void TestSendEnum(TestEnum data);
+	}
+
+	public enum TestEnum
+	{
+		A,B
 	}
 
 	public class TestContract : ITestConract
@@ -84,6 +92,11 @@ namespace Rpc.RpcHandle.Tests
 		public void TestNoReturn(TestClass1 data)
 		{
 			Console.WriteLine(data.StringData);
+		}
+
+		public void TestSendEnum(TestEnum data)
+		{
+			//do nothing
 		}
 
 		public bool TestWithReturn(TestClass1 data)

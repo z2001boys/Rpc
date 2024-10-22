@@ -309,7 +309,7 @@ namespace Rpc.Tcp
 			int receiveBufferSize)
 		{
 			SocketHandle = s;
-			
+
 
 			_buffer = new byte[receiveBufferSize];
 			_workThread = new Thread(ThreadJob);
@@ -392,5 +392,11 @@ namespace Rpc.Tcp
 				_workThread.Abort();
 			}
 		}
+	}
+
+	public interface IContext
+	{
+		int ProcessTimeOutMs { get; set; }
+		TContract GetContract<TContract>();
 	}
 }

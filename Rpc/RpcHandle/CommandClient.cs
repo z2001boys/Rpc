@@ -11,12 +11,12 @@ using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle
 {
-	internal class CommandClient<TCmd> : CmdCommunicator
+	internal class CommandClient<TCmd> : CmdCommunicator, IContext
 	{
 		public int ProcessTimeOutMs { get; set; } = 10000;
 
-		internal CancellationToken CancellationToken { get; set; }
 
+		CancellationTokenSource _canceller = new CancellationTokenSource();
 
 		//for wait data
 		private readonly ConcurrentDictionary<int, TaskCompletionSource<CmdCommunicator.DataReceiveArgs>> _pendingRequests =
@@ -38,12 +38,23 @@ namespace Rpc.RpcHandle
 			}
 		}
 
+		protected ProxyProcessor ProxyHandle { get; private set; }
+		public TCmd Proxy => (TCmd)ProxyHandle.GetTransparentProxy();
+
 
 		public CommandClient(Socket s, int receiveBufferSize) : base(s, receiveBufferSize)
 		{
 			_methods = Util.Util.GetOperationContractMethods(typeof(TCmd));
-
+			ProxyHandle = new ProxyProcessor(typeof(TCmd));
+			ProxyHandle.FunctionCalled += Call;
 			base.PackIn += OnPackIn;
+			this.Disconnected += CommandClient_Disconnected;
+		}
+
+		private void CommandClient_Disconnected(object sender, EventArgs e)
+		{
+			_canceller.Cancel();
+			ProxyHandle.FunctionCalled -= Call;
 		}
 
 		internal virtual void OnPackIn(object sender, DataReceiveArgs e)
@@ -62,7 +73,7 @@ namespace Rpc.RpcHandle
 			}
 		}
 
-		public void Call( ProxyFunctionCallArgs e)
+		private void Call(object sender, ProxyFunctionCallArgs e)
 		{
 			if (Finalized == true) throw new Exception("not connect to server");
 
@@ -78,11 +89,11 @@ namespace Rpc.RpcHandle
 			this.Send(data);
 
 			//wait data back
-			var waiter = WaitForDataAsync(header.Id, CancellationToken);
+			var waiter = WaitForDataAsync(header.Id, _canceller.Token);
 			var ret = waiter.Wait(ProcessTimeOutMs);
 
 			//例外處理
-			if (CancellationToken.IsCancellationRequested)
+			if (_canceller.IsCancellationRequested)
 			{
 				//斷線
 				throw new Exception("Connection is closed");
@@ -121,6 +132,11 @@ namespace Rpc.RpcHandle
 			});
 
 			return tcs.Task;
+		}
+
+		public TContract GetContract<TContract>()
+		{
+			return (TContract)ProxyHandle.GetTransparentProxy();
 		}
 	}
 }

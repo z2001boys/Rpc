@@ -8,31 +8,39 @@ using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle.DuplexRpc
 {
-	public class DuplexRpcServer<TServer,TServerCallBack> : RpcServer<TServer>
-	{		
+	public class DuplexRpcServer<TServer, TServerCallBack> : RpcServer<TServer>
+	{
 
-		//List<CommandSender<TServerCallBack>> _commandSender;
 
 		public DuplexRpcServer(TServer serverHandle) : base(serverHandle)
 		{
-			this.ClientConnected += DuplexClientConnect;
-			this.ClientDisConnected += DuplexClientDisConnect;
+
 		}
 
-		private void DuplexClientDisConnect(object sender, SocketInfoArgs e)
+		internal override void RpcServer_CommunicationCreating(object sender, CreateCommunicatorArgs args)
 		{
-			
+			var com = new CommandDuplex<TServer, TServerCallBack>(ServerHandle, ServerMethods, args.Socket, args.ReceiveBufferSize);
+			com.ProcessTimeOutMs = _processTimeoutMs;
+			args.Communicator = com;
 		}
 
-		private void DuplexClientConnect(object sender, SocketInfoArgs e)
+		private int _processTimeoutMs = 1000;
+		public int ProcessTimeoutMs
 		{
-			//var newSender = new CommandSender<TServerCallBack>();
-			//
-			//
-			//lock (newSender)
-			//{
-			//	_commandSender.Add(newSender);
-			//}
+			get => _processTimeoutMs;
+			set
+			{
+				foreach (var com in Clients)
+				{
+					Util.Util.SetPropertyValue(com, "ProcessTimeOutMs", value);
+				}
+			}
 		}
+
+		public IContext[] GetAllContext()
+		{
+			return Clients.Select(x => (IContext)x).ToArray();
+		}
+
 	}
 }

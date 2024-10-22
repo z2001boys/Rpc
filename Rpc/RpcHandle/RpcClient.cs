@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Rpc.Tcp;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,22 +16,14 @@ namespace Rpc.RpcHandle
 	public class RpcClient<TServer> : Rpc.Tcp.TcpClient
 	{
 
-		ProxyProcessor _proxy;
 
 		//cancel token
 		CancellationTokenSource _cts;
 
 		public RpcClient()
 		{
-			_proxy = new ProxyProcessor(typeof(TServer));
-			_proxy.FunctionCalled += FunctionCall;
 			//掛上行為
-			this.CommunicationCreating += (ss, ee) =>
-			{
-				var com = new CommandClient<TServer>(ee.Socket, ee.ReceiveBufferSize);
-				com.ProcessTimeOutMs = this.ProcessTimeOutMs;
-				ee.Communicator = com;
-			};
+			this.CommunicationCreating += OnCommunicationCreating;
 
 			this.Disconnected += (ss, ee) =>
 			{
@@ -38,21 +31,37 @@ namespace Rpc.RpcHandle
 			};
 		}
 
-		private void FunctionCall(object sender, ProxyFunctionCallArgs e)
+		internal virtual void OnCommunicationCreating(object sender, CreateCommunicatorArgs args)
 		{
-			if(this.IsConnect==false)
-				throw new Exception("Not connected");
-			if(this.Com==null)
-				throw new Exception("Communicator not created");
-			if(Com is CommandClient<TServer> senderCom)
-			{
-				senderCom.Call(e);
-			}
-
-
+			var com = new CommandClient<TServer>(args.Socket, args.ReceiveBufferSize);
+			com.ProcessTimeOutMs = this.ProcessTimeOutMs;
+			args.Communicator = com;
 		}
 
-		public TServer Proxy => (TServer)_proxy.GetTransparentProxy();
+		//internal virtual void FunctionCall(object sender, ProxyFunctionCallArgs e)
+		//{
+		//	if (this.IsConnect == false)
+		//		throw new Exception("Not connected");
+		//	if (this.Com == null)
+		//		throw new Exception("Communicator not created");
+		//	if (Com is CommandClient<TServer> senderCom)
+		//	{
+		//		senderCom.Call(e);
+		//	}
+		//}
+
+		public TServer Proxy
+		{
+			get
+			{
+				if (Com == null)
+					throw new Exception("Communicator not created");
+				if (Com is IContext ic)
+					return ic.GetContract<TServer>();
+				throw new Exception("Communicator not support IContext");
+			}
+		}
+
 
 		private int _timeOutMs = 1000;
 		public int ProcessTimeOutMs
@@ -62,16 +71,16 @@ namespace Rpc.RpcHandle
 			{
 				if (value == _timeOutMs) return;
 				_timeOutMs = value;
-				if (Com is CommandClient<TServer> senderCom)
-				{
-					senderCom.ProcessTimeOutMs = value;
-				}
+				//set property by reflection to com
+
+				Util.Util.SetPropertyValue(Com, "ProcessTimeOutMs", value);
+
 			}
 		}
 
 		public override void Connect()
 		{
-			_cts = new CancellationTokenSource();			
+			_cts = new CancellationTokenSource();
 			base.Connect();
 		}
 

@@ -15,10 +15,10 @@ using System.Net.Sockets;
 
 namespace Rpc.RpcHandle
 {
-	internal class CommandServer<TServer> : CmdCommunicator, IDisposable
+	internal class CommandServer<TServer> : CmdCommunicator
 	{
 		private readonly TServer _serverHandle;
-		private readonly List<MethodInfo> _methods;						
+		private readonly List<MethodInfo> _methods;
 		private Threader _threader;//記得釋放
 		public event EventHandler Disposing;
 
@@ -27,13 +27,24 @@ namespace Rpc.RpcHandle
 		{
 			this._serverHandle = serverHandle;
 			this._methods = methods;
-
-			this.PackIn += (ss,ee) => ProcessCommand(ee);
+			this.PackIn += PackDataIn;
+			this.Disconnected += (ss, ee) =>
+			{
+				Disposing?.Invoke(this, null);
+				_threader.Dispose();
+			};
 
 			_threader = new Threader(1);
 
 		}
 
+		private void PackDataIn(object sender, DataReceiveArgs e)
+		{
+			if (e.Header.Type == MessageType.Request)
+			{
+				_threader.Start(() => ProcessCommand(e));
+			}
+		}
 
 		internal virtual void ProcessCommand(DataReceiveArgs e)
 		{
@@ -48,16 +59,28 @@ namespace Rpc.RpcHandle
 			var argTypes = method.GetParameters().Select(x => x.ParameterType).ToArray();
 			var args = Serilaizer.Deserialize(e.Data, argTypes);
 
+
+
+			//紀錄context
+			var threadId = Thread.CurrentThread.ManagedThreadId;
+			Util.Util.ContextRegiester(this);
+
 			//invoke
 			object result = null;
 			string exceptionReason = "";
 			try
 			{
+
 				result = method.Invoke(_serverHandle, args);
 			}
 			catch (Exception ex)
 			{
 				exceptionReason = ex.Message;
+			}
+			finally
+			{
+				//remove context
+				Util.Util.ContextUnRegiester(this);
 			}
 
 			//send back
@@ -87,12 +110,7 @@ namespace Rpc.RpcHandle
 		}
 
 
-		public override void Dispose()
-		{
-			Disposing?.Invoke(this, null);
-			_threader.Dispose();
-			base.Dispose();
-		}
+
 
 
 	}
