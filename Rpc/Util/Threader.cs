@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,17 +9,23 @@ using System.Threading.Tasks;
 namespace Rpc.Util
 {
 	/// <summary>
-	/// 
+	/// A simple thread pool
 	/// </summary>
 	public class Threader : IDisposable
 	{
 		public List<ThreadObject> _allThreads = new List<ThreadObject>();
 		public Queue<ThreadObject> _idleThreads = new Queue<ThreadObject>();
+		public ConcurrentQueue<Action> _actions = new ConcurrentQueue<Action>();
+		/// <summary>
+		/// the max thread in pool
+		/// </summary>
+		public int MaxThread { get;  }
+
 		/// <summary>
 		/// 
 		/// </summary>
 		/// <param name="defaultThreadCount"></param>
-		public Threader(int defaultThreadCount)
+		public Threader(int defaultThreadCount, int maxThread = 10)
 		{
 			for (int i = 0; i < defaultThreadCount; i++)
 			{
@@ -26,6 +33,8 @@ namespace Rpc.Util
 				_allThreads.Add(obj);
 				_idleThreads.Enqueue(obj);
 			}
+
+			MaxThread = maxThread;
 		}
 
 		private ThreadObject CreateNewObject()
@@ -33,6 +42,12 @@ namespace Rpc.Util
 			var obj = new ThreadObject();
 			obj.Done += (sender, args) =>
 			{
+
+				if(_actions.TryDequeue(out var action))
+				{
+					obj.Start(action);
+				}
+
 				lock (_idleThreads)
 				{
 					_idleThreads.Enqueue(obj);
@@ -50,6 +65,11 @@ namespace Rpc.Util
 			ThreadObject obj = null;
 			lock (_idleThreads)
 			{
+				if(_allThreads.Count==MaxThread)
+				{
+					//thread pool reached the maximun size, you should wait here
+					_actions.Enqueue(act);
+				}
 				if (_idleThreads.Count > 0)
 				{
 					obj = _idleThreads.Dequeue();
