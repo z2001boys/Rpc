@@ -89,12 +89,12 @@ namespace Rpc.RpcHandle
 
 			//wait data back
 			//you should start wait before send 
-			var waiter = WaitForDataAsync(header.Id, _canceller.Token);
-			var ret = waiter.Wait(ProcessTimeOutMs);
-			//send data
+			var waiter = WaitForDataAsync(header.Id, _canceller.Token);			
+			//send data and wait
 			this.Send(data);
+			var ret = waiter.Wait(ProcessTimeOutMs);
 
-			
+
 
 			//excpetion process
 			if (_canceller.IsCancellationRequested)

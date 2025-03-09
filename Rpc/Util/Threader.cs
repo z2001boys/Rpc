@@ -70,7 +70,7 @@ namespace Rpc.Util
 					//thread pool reached the maximun size, you should wait here
 					_actions.Enqueue(act);
 				}
-				if (_idleThreads.Count > 0)
+				else if (_idleThreads.Count > 0)
 				{
 					obj = _idleThreads.Dequeue();
 				}

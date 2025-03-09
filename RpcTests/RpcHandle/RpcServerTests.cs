@@ -22,7 +22,7 @@ namespace Rpc.RpcHandle.Tests
 
 			var testData = new TestClass1();
 
-			client.ProcessTimeOutMs = 9999999;
+			client.ProcessTimeOutMs = 10 * 1000;
 			client.Proxy.TestNoReturn(testData);
 			client.Proxy.TestWithReturn(testData);
 			client.Proxy.TestSendEnum(TestEnum.A);
@@ -51,13 +51,13 @@ namespace Rpc.RpcHandle.Tests
 			//test multi client process at same time
 			Parallel.ForEach(clients, (client) =>
 			{
-				client.ProcessTimeOutMs = 9999999;
+				client.ProcessTimeOutMs = 5000;
 				for (int i = 0; i < 100; i++)
 				{
 					client.Proxy.TestNoReturn(testData);
 					client.Proxy.TestWithReturn(testData);
 				}
-				
+
 			});
 
 			server.Dispose();
@@ -83,7 +83,7 @@ namespace Rpc.RpcHandle.Tests
 
 	public enum TestEnum
 	{
-		A,B
+		A, B
 	}
 
 	public class TestContract : ITestConract
