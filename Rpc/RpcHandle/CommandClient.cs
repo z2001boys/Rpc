@@ -86,16 +86,20 @@ namespace Rpc.RpcHandle
 				Id = IncCounter()
 			};
 			var data = Serilaizer.Serialize(header, e.Args);
-			this.Send(data);
 
 			//wait data back
+			//you should start wait before send 
 			var waiter = WaitForDataAsync(header.Id, _canceller.Token);
 			var ret = waiter.Wait(ProcessTimeOutMs);
+			//send data
+			this.Send(data);
 
-			//例外處理
+			
+
+			//excpetion process
 			if (_canceller.IsCancellationRequested)
 			{
-				//斷線
+				//disconnect procedure
 				throw new Exception("Connection is closed");
 			}
 			if (ret == false || waiter.Result.Data.Length == 0)
