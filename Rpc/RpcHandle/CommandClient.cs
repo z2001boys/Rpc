@@ -1,4 +1,5 @@
 ﻿using Rpc.Tcp;
+using Rpc.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle
 {
-	internal class CommandClient<TCmd> : CmdCommunicator, IContext
+	internal class CommandClient<TCmd> : CmdCommunicator, IContext where TCmd : class
 	{
 		public int ProcessTimeOutMs { get; set; } = 10000;
 
@@ -22,7 +23,7 @@ namespace Rpc.RpcHandle
 		private readonly ConcurrentDictionary<int, TaskCompletionSource<CmdCommunicator.DataReceiveArgs>> _pendingRequests =
 			new ConcurrentDictionary<int, TaskCompletionSource<CmdCommunicator.DataReceiveArgs>>();
 
-		List<MethodInfo> _methods;
+		List<MethodCallInfo> _methods;
 		private object _lock = new object();
 		private int _cmdCounter;
 
@@ -38,14 +39,14 @@ namespace Rpc.RpcHandle
 			}
 		}
 
-		internal ProxyProcessor ProxyHandle { get; private set; }
-		public TCmd Proxy => (TCmd)ProxyHandle.GetTransparentProxy();
+		internal FakeSimpleProxy<TCmd> ProxyHandle { get; private set; }
+		public TCmd Proxy => (TCmd)ProxyHandle.GetProxy();
 
 
 		public CommandClient(Socket s, int receiveBufferSize) : base(s, receiveBufferSize)
 		{
-			_methods = Util.Util.GetOperationContractMethods(typeof(TCmd));
-			ProxyHandle = new ProxyProcessor(typeof(TCmd));
+			_methods = Util.Util.BuildMethodInfo(typeof(TCmd));
+			ProxyHandle = new FakeSimpleProxy<TCmd>();
 			ProxyHandle.FunctionCalled += Call;
 			base.PackIn += OnPackIn;
 			this.Disconnected += CommandClient_Disconnected;
@@ -87,12 +88,17 @@ namespace Rpc.RpcHandle
 			};
 			var data = Serilaizer.Serialize(header, e.Args);
 
+			//check the timeout usage
+			var timeout = ProcessTimeOutMs;
+			if (method.TimeoutMs >= 0)
+				timeout = ProcessTimeOutMs;
+
 			//wait data back
 			//you should start wait before send 
-			var waiter = WaitForDataAsync(header.Id, _canceller.Token);			
+			var waiter = WaitForDataAsync(header.Id, _canceller.Token);
 			//send data and wait
 			this.Send(data);
-			var ret = waiter.Wait(ProcessTimeOutMs);
+			var ret = waiter.Wait(timeout);
 
 
 
@@ -108,7 +114,7 @@ namespace Rpc.RpcHandle
 				throw new TimeoutException("Remote command timeout");
 			}
 
-			var result = new ResponseResult(method, waiter.Result.Data);
+			var result = new ResponseResult(method.Method, waiter.Result.Data);
 			if (result.Success == false)
 			{
 				throw new Exception(result.ErrorReason);
@@ -140,7 +146,7 @@ namespace Rpc.RpcHandle
 
 		public TContract GetContract<TContract>()
 		{
-			return (TContract)ProxyHandle.GetTransparentProxy();
+			return (TContract)ProxyHandle.GetProxy();
 		}
 	}
 }

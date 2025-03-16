@@ -18,12 +18,14 @@ namespace Rpc.RpcHandle
 	internal class CommandServer<TServer> : CmdCommunicator
 	{
 		private readonly TServer _serverHandle;
-		private readonly List<MethodInfo> _methods;
+		private readonly List<MethodCallInfo> _methods;
 		private Threader _threader;//記得釋放
 		public event EventHandler Disposing;
 
-		public CommandServer(TServer serverHandle, List<MethodInfo> methods,
-			Socket s, int reciverSize) : base(s, reciverSize)
+		public CommandServer(TServer serverHandle,
+			List<MethodCallInfo> methods,
+			Socket s,
+			int reciverSize) : base(s, reciverSize)
 		{
 			this._serverHandle = serverHandle;
 			this._methods = methods;
@@ -56,7 +58,7 @@ namespace Rpc.RpcHandle
 			}
 
 			//get all arg's type
-			var argTypes = method.GetParameters().Select(x => x.ParameterType).ToArray();
+			var argTypes = method.Method.GetParameters().Select(x => x.ParameterType).ToArray();
 			var args = Serilaizer.Deserialize(e.Data, argTypes);
 
 
@@ -71,7 +73,7 @@ namespace Rpc.RpcHandle
 			try
 			{
 
-				result = method.Invoke(_serverHandle, args);
+				result = method.Method.Invoke(_serverHandle, args);
 			}
 			catch (Exception ex)
 			{
@@ -95,7 +97,7 @@ namespace Rpc.RpcHandle
 				Success = exceptionReason == "",
 				Exception = exceptionReason
 			};
-			if (method.ReturnType == typeof(void))
+			if (method.Method.ReturnType == typeof(void))
 			{
 				//no need to send back data
 				var data = Serilaizer.Serialize(returnHeader, new object[] { responseHeader });

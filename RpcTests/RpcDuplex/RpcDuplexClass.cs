@@ -49,7 +49,7 @@ namespace RpcTests.RpcDuplex
 
 	public interface TestContractCallback
 	{
-		[OperationContract]
+		
 		void OnAdd(int result);
 	}
 

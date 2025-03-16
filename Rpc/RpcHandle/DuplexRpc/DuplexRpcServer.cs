@@ -14,6 +14,8 @@ namespace Rpc.RpcHandle.DuplexRpc
 	/// <typeparam name="TServer"></typeparam>
 	/// <typeparam name="TServerCallBack"></typeparam>
 	public class DuplexRpcServer<TServer, TServerCallBack> : RpcServer<TServer>
+		where TServer : class
+		where TServerCallBack : class
 	{
 
 

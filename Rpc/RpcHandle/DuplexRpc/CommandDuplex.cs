@@ -1,4 +1,5 @@
 ﻿using Rpc.Tcp;
+using Rpc.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace Rpc.RpcHandle.DuplexRpc
 	/// </summary>
 	/// <typeparam name="TServer"></typeparam>
 	/// <typeparam name="TCallBack"></typeparam>
-	internal class CommandDuplex<TServer, TCallBack> : CommandServer<TServer>, IContext
+	internal class CommandDuplex<TServer, TCallBack> : CommandServer<TServer>, IContext where TCallBack : class
 	{
 
 		CommandClient<TCallBack> _client;
@@ -30,7 +31,7 @@ namespace Rpc.RpcHandle.DuplexRpc
 		/// <param name="receiverSize">socket receive size</param>
 		public CommandDuplex(
 			TServer serverHandle,
-			List<MethodInfo> methodInfo,
+			List<MethodCallInfo> methodInfo,
 			Socket so,
 			int receiverSize) : base(serverHandle, methodInfo, so, receiverSize)
 		{

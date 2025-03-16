@@ -17,9 +17,11 @@ namespace Rpc.Util
 
 		internal static Dictionary<int, Communicator> ContexCatcher = new Dictionary<int, Communicator>();
 
-		internal static List<MethodInfo> GetOperationContractMethods(Type targetType)
+		internal static List<MethodCallInfo> BuildMethodInfo(Type targetType)
 		{
-			var ret = GetMethods(targetType).Where(m => m.GetCustomAttribute<OperationContractAttribute>() != null).ToList();
+
+			var ret = GetMethods(targetType)				
+				.Select(m => new MethodCallInfo(m)).ToList();
 			return ret;
 		}
 

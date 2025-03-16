@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Rpc.RpcHandle
 {
-	public class RpcClient<TServer> : Rpc.Tcp.TcpClient
+	public class RpcClient<TServer> : Rpc.Tcp.TcpClient where TServer : class
 	{
 
 

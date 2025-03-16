@@ -1,5 +1,6 @@
 ﻿using Rpc.RpcHandle;
 using Rpc.Tcp;
+using Rpc.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,11 +13,11 @@ namespace Rpc.RpcHandle
 {
 	public class RpcServer<ServerContract> : TcpServer
 	{
-		internal List<MethodInfo> ServerMethods;
+		internal List<MethodCallInfo> ServerMethods;
 		public RpcServer(ServerContract serverHandle)
 		{
 
-			ServerMethods = Util.Util.GetOperationContractMethods(typeof(ServerContract));
+			ServerMethods = Util.Util.BuildMethodInfo(typeof(ServerContract));
 			ServerHandle = serverHandle;
 
 			this.CommunicationCreating += RpcServer_CommunicationCreating;

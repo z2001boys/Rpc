@@ -1,4 +1,5 @@
 ﻿using Rpc.Tcp;
+using Rpc.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,11 +10,13 @@ using System.Threading.Tasks;
 namespace Rpc.RpcHandle.DuplexRpc
 {
 	public class DuplexRpcClient<TServer, TServerCallBack> : RpcClient<TServer>
+		where TServer : class
+		where TServerCallBack : class
 	{
 		public DuplexRpcClient(TServerCallBack callBackHandle)
 		{
 			CallBackHandle = callBackHandle;
-			CallBackMethods = Util.Util.GetOperationContractMethods(typeof(TServerCallBack));
+			CallBackMethods = Util.Util.BuildMethodInfo(typeof(TServerCallBack));
 		}
 
 		internal override void OnCommunicationCreating(object sender, CreateCommunicatorArgs args)
@@ -36,6 +39,6 @@ namespace Rpc.RpcHandle.DuplexRpc
 		//}
 
 		public TServerCallBack CallBackHandle { get; }
-		public List<MethodInfo> CallBackMethods { get; }
+		public List<MethodCallInfo> CallBackMethods { get; }
 	}
 }

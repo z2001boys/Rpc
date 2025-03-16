@@ -79,6 +79,10 @@ namespace Rpc.RpcHandle.Tests
 		bool TestWithReturn(TestClass1 data);
 		[OperationContract]
 		void TestSendEnum(TestEnum data);
+
+		
+		int SomeProp { get; set; }
+		
 	}
 
 	public enum TestEnum
@@ -88,6 +92,8 @@ namespace Rpc.RpcHandle.Tests
 
 	public class TestContract : ITestConract
 	{
+		public int SomeProp { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
 		public void TestNoReturn(TestClass1 data)
 		{
 			Console.WriteLine(data.StringData);
