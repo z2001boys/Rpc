@@ -16,7 +16,7 @@ namespace Rpc.RpcHandle
 		public string ErrorReason { get; }
 		public ResponseResult(MethodInfo info, byte[] data)
 		{
-			int offset = Marshal.SizeOf(typeof(PackHeader));			
+			int offset = Marshal.SizeOf(typeof(PackHeader));
 			int dataHeaderSize = Marshal.SizeOf(typeof(DataHeader));
 			//get first data header
 			var dataHeader = Util.Util.BytesToStruct<DataHeader>(data, offset);
@@ -43,11 +43,19 @@ namespace Rpc.RpcHandle
 				return;
 			}
 
+
+			var solveType = info.ReturnType;
+			//如果是task
+			if (solveType.IsGenericType && solveType.GetGenericTypeDefinition() == typeof(Task<>))
+			{
+				solveType = solveType.GetGenericArguments()[0];
+			}
+
 			dataHeader = Util.Util.BytesToStruct<DataHeader>(data, offset);
 			offset += dataHeaderSize;
 			var eachData = new byte[dataHeader.Length];
 			Array.Copy(data, offset, eachData, 0, dataHeader.Length);
-			Result = MessagePack.MessagePackSerializer.Deserialize(info.ReturnType, eachData, MessagePack.Resolvers.ContractlessStandardResolver.Options);
+			Result = MessagePack.MessagePackSerializer.Deserialize(solveType, eachData, MessagePack.Resolvers.ContractlessStandardResolver.Options);
 
 		}
 	}

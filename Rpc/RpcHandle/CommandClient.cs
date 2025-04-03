@@ -76,52 +76,91 @@ namespace Rpc.RpcHandle
 
 		private void Call(object sender, ProxyFunctionCallArgs e)
 		{
-			if (Finalized == true) throw new Exception("not connect to server");
-
-			//get method
 			var method = _methods.FirstOrDefault(x => x.Name == e.MethodName);
+			var returnType = method.Method.ReturnType;
+
+			if (typeof(Task).IsAssignableFrom(returnType))
+			{
+				// 若為Task或Task<T>，將其包裝並回傳給外部
+				e.ReturnObject = WrapAsTask(returnType, e.MethodName, e.Args, ProcessTimeOutMs);
+			}
+			else
+			{
+				// 同步方法繼續使用Wait (這種方法同步是可接受的，因為它非async)
+				var task = CallAsync(e.MethodName, e.Args, ProcessTimeOutMs);
+				task.Wait(ProcessTimeOutMs);
+				e.ReturnObject = task.Result;
+			}
+		}
+
+		private object WrapAsTask(Type returnType, string methodName, object[] args, int timeoutMs)
+		{
+			if (returnType == typeof(Task))
+			{
+				return CallAsync(methodName, args, timeoutMs);
+			}
+			else if (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Task<>))
+			{
+				var innerType = returnType.GetGenericArguments()[0];
+
+				return this.GetType()  // 改為你的類別名稱
+					.GetMethod(nameof(WrapAsGenericTask), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+					.MakeGenericMethod(innerType)
+					.Invoke(this, new object[] { methodName, args, timeoutMs });
+			}
+
+			throw new InvalidOperationException("Invalid return type");
+		}
+
+		private async Task<T> WrapAsGenericTask<T>(string methodName, object[] args, int timeoutMs)
+		{
+			var result = await CallAsync(methodName, args, timeoutMs);
+			return (T)result;
+		}
+
+		private async Task<object> CallAsync(string methodName, object[] args, int timeoutMs)
+		{
+			if (Finalized)
+				throw new Exception("not connect to server");
+
+			var method = _methods.FirstOrDefault(x => x.Name == methodName);
+
+			if (method == null)
+				throw new Exception($"Method '{methodName}' not found.");
+
 			PackHeader header = new PackHeader()
 			{
 				Type = MessageType.Request,
-				Method = e.MethodName,
+				Method = methodName,
 				Id = IncCounter()
 			};
-			var data = Serilaizer.Serialize(header, e.Args);
 
-			//check the timeout usage
-			var timeout = ProcessTimeOutMs;
-			if (method.TimeoutMs >= 0)
-				timeout = ProcessTimeOutMs;
+			var data = Serilaizer.Serialize(header, args);
 
-			//wait data back
-			//you should start wait before send 
+			var timeout = method.TimeoutMs >= 0 ? method.TimeoutMs : timeoutMs;
+
 			var waiter = WaitForDataAsync(header.Id, _canceller.Token);
-			//send data and wait
+
 			this.Send(data);
-			var ret = waiter.Wait(timeout);
 
-
-
-			//excpetion process
-			if (_canceller.IsCancellationRequested)
-			{
-				//disconnect procedure
-				throw new Exception("Connection is closed");
-			}
-			if (ret == false || waiter.Result.Data.Length == 0)
-			{
-				//timeout
+			var completedTask = await Task.WhenAny(waiter, Task.Delay(timeout));
+			if (completedTask != waiter)
 				throw new TimeoutException("Remote command timeout");
-			}
 
-			var result = new ResponseResult(method.Method, waiter.Result.Data);
-			if (result.Success == false)
-			{
+			var responseData = waiter.Result;
+
+			if (_canceller.IsCancellationRequested)
+				throw new Exception("Connection is closed");
+
+			if (responseData.Data.Length == 0)
+				throw new TimeoutException("Remote command timeout");
+
+			var result = new ResponseResult(method.Method, responseData.Data);
+
+			if (!result.Success)
 				throw new Exception(result.ErrorReason);
-			}
 
-
-			e.ReturnObject = result.Result;
+			return result.Result;
 		}
 
 		internal Task<CmdCommunicator.DataReceiveArgs> WaitForDataAsync(int key, CancellationToken cancellationToken)

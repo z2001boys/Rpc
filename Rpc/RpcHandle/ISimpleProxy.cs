@@ -93,7 +93,7 @@ namespace Rpc.RpcHandle
 		/// </summary>
 		private object GetDefaultReturn(MethodInfo method)
 		{
-			if (method.ReturnType != typeof(void))
+			if (method.ReturnType != typeof(void) && typeof(Task).IsAssignableFrom( method.ReturnType)==false)
 				return Activator.CreateInstance(method.ReturnType);
 
 			return null;

@@ -36,7 +36,7 @@ namespace RpcTests.RpcDuplex
 
 		}
 
-		
+
 
 	}
 
@@ -44,12 +44,14 @@ namespace RpcTests.RpcDuplex
 	{
 		[OperationContract]
 		int Add(int a, int b);
-		
+
+
+
 	}
 
 	public interface TestContractCallback
 	{
-		
+
 		void OnAdd(int result);
 	}
 
@@ -60,6 +62,11 @@ namespace RpcTests.RpcDuplex
 			var callBackContract = Rpc.Util.Helper.GetCurrentContext().GetContract<TestContractCallback>();
 			callBackContract.OnAdd(a + b);
 			return a + b;
+		}
+
+		public Task<int> AddAsync(int a, int b)
+		{
+			return Task.FromResult(a + b);
 		}
 	}
 

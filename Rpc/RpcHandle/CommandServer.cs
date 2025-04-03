@@ -61,8 +61,6 @@ namespace Rpc.RpcHandle
 			var argTypes = method.Method.GetParameters().Select(x => x.ParameterType).ToArray();
 			var args = Serilaizer.Deserialize(e.Data, argTypes);
 
-
-
 			//紀錄context
 			var threadId = Thread.CurrentThread.ManagedThreadId;
 			Util.Util.ContextRegiester(this);
@@ -72,8 +70,29 @@ namespace Rpc.RpcHandle
 			string exceptionReason = "";
 			try
 			{
-
 				result = method.Method.Invoke(_serverHandle, args);
+
+				// ★加入判斷：等待非同步Task結果
+				if (result is Task taskResult)
+				{
+					taskResult.GetAwaiter().GetResult(); //同步等待
+
+					var returnType = method.Method.ReturnType;
+					if (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Task<>))
+					{
+						var resultProperty = returnType.GetProperty("Result");
+						result = resultProperty.GetValue(taskResult);
+					}
+					else
+					{
+						// Task無回傳值
+						result = null;
+					}
+				}
+			}
+			catch (TargetInvocationException ex)
+			{
+				exceptionReason = ex.InnerException?.Message ?? ex.Message;
 			}
 			catch (Exception ex)
 			{
@@ -97,7 +116,8 @@ namespace Rpc.RpcHandle
 				Success = exceptionReason == "",
 				Exception = exceptionReason
 			};
-			if (method.Method.ReturnType == typeof(void))
+
+			if (method.Method.ReturnType == typeof(void) || method.Method.ReturnType == typeof(Task))
 			{
 				//no need to send back data
 				var data = Serilaizer.Serialize(returnHeader, new object[] { responseHeader });
@@ -106,6 +126,7 @@ namespace Rpc.RpcHandle
 			}
 			else
 			{
+				// send back data
 				var data = Serilaizer.Serialize(returnHeader, new object[] { responseHeader, result });
 				this.Send(data);
 			}

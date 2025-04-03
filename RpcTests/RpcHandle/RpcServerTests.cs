@@ -65,8 +65,23 @@ namespace Rpc.RpcHandle.Tests
 			{
 				client.Dispose();
 			}
+		}
 
+		[TestMethod()]
+		public void RpcTestAsync()
+		{
+			var server = new RpcServer<ITestConract>(new TestContract());
+			server.OnLine();
+			var client = new RpcClient<ITestConract>();
+			client.Connect();
 
+			client.ProcessTimeOutMs = 100 * 1000;
+			var result = client.Proxy.GetIntAsync().Result;
+
+			Assert.IsTrue(result == 1);
+
+			server.Dispose();
+			client.Dispose();
 		}
 
 	}
@@ -80,6 +95,9 @@ namespace Rpc.RpcHandle.Tests
 		[OperationContract]
 		void TestSendEnum(TestEnum data);
 
+		[OperationContract]
+		Task<int> GetIntAsync();
+		
 		
 		int SomeProp { get; set; }
 		
@@ -93,6 +111,11 @@ namespace Rpc.RpcHandle.Tests
 	public class TestContract : ITestConract
 	{
 		public int SomeProp { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+		public Task<int> GetIntAsync()
+		{
+			return Task.FromResult(1);
+		}
 
 		public void TestNoReturn(TestClass1 data)
 		{
