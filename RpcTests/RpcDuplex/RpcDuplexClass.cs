@@ -59,7 +59,7 @@ namespace RpcTests.RpcDuplex
 	{
 		public int Add(int a, int b)
 		{
-			var callBackContract = Rpc.Util.Helper.GetCurrentContext().GetContract<TestContractCallback>();
+			var callBackContract = Rpc.Util.Helper.GetContext().GetContract<TestContractCallback>();
 			callBackContract.OnAdd(a + b);
 			return a + b;
 		}

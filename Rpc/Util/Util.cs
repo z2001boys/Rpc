@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Contexts;
 using System.ServiceModel;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,12 +17,11 @@ namespace Rpc.Util
 	internal static class Util
 	{
 
-		internal static Dictionary<int, Communicator> ContexCatcher = new Dictionary<int, Communicator>();
 
 		internal static List<MethodCallInfo> BuildMethodInfo(Type targetType)
 		{
 
-			var ret = GetMethods(targetType)				
+			var ret = GetMethods(targetType)
 				.Select(m => new MethodCallInfo(m)).ToList();
 			return ret;
 		}
@@ -103,47 +104,23 @@ namespace Rpc.Util
 			}
 		}
 
-		internal static void ContextRegiester<TServer>(CommandServer<TServer> commandServer)
-		{
-			var threadId = Thread.CurrentThread.ManagedThreadId;
-			lock (ContexCatcher)
-				if (ContexCatcher.ContainsKey(threadId))
-				{
-					ContexCatcher[threadId] = commandServer;
-				}
-				else
-				{
-					ContexCatcher.Add(threadId, commandServer);
-				}
-		}
 
-		internal static void ContextUnRegiester<TServer>(CommandServer<TServer> commandServer)
-		{
-			var threadId = Thread.CurrentThread.ManagedThreadId;
-			lock (ContexCatcher)
-				if (ContexCatcher.ContainsKey(threadId))
-				{
-					ContexCatcher.Remove(threadId);
-				}
-		}
+		internal static readonly AsyncLocal<IContext> RpcContext = new AsyncLocal<IContext>();
+
+		
 	}
+
 
 	public static class Helper
 	{
-		public static IContext GetCurrentContext()
+		public static IContext GetContext()
 		{
-			var threadId = Thread.CurrentThread.ManagedThreadId;
-			if (Util.ContexCatcher.ContainsKey(threadId))
+			if (Util.RpcContext.Value == null)
 			{
-				return (IContext)Util.ContexCatcher[threadId];
+				throw new Exception("no context");
 			}
-			else
-			{
-				return null;
-			}
-
+			return Util.RpcContext.Value;
 		}
 	}
-
 
 }

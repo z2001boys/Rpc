@@ -63,7 +63,11 @@ namespace Rpc.RpcHandle
 
 			//紀錄context
 			var threadId = Thread.CurrentThread.ManagedThreadId;
-			Util.Util.ContextRegiester(this);
+			if(this is IContext context)
+			{
+				Util.Util.RpcContext.Value = context;
+			}
+			
 
 			//invoke
 			object result = null;
@@ -100,8 +104,6 @@ namespace Rpc.RpcHandle
 			}
 			finally
 			{
-				//remove context
-				Util.Util.ContextUnRegiester(this);
 			}
 
 			//send back

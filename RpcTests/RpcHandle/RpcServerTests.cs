@@ -84,6 +84,26 @@ namespace Rpc.RpcHandle.Tests
 			client.Dispose();
 		}
 
+		[TestMethod()]
+		public void RpcTestProperty()
+		{
+			var server = new RpcServer<ITestConract>(new TestContract());
+			server.OnLine();
+			var client = new RpcClient<ITestConract>();
+			client.Connect();
+
+			client.ProcessTimeOutMs = 100 * 1000;
+			var result = client.Proxy.SomeProp = 1;
+
+			Assert.IsTrue(result == 1);
+
+			client.Proxy.SomeProp = 2;
+			Assert.IsTrue(client.Proxy.SomeProp == 2);
+
+			server.Dispose();
+			client.Dispose();
+		}
+
 	}
 
 	public interface ITestConract
@@ -110,10 +130,12 @@ namespace Rpc.RpcHandle.Tests
 
 	public class TestContract : ITestConract
 	{
-		public int SomeProp { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+		public int SomeProp { get; set; } = 1;
 
 		public Task<int> GetIntAsync()
 		{
+			
+
 			return Task.FromResult(1);
 		}
 
