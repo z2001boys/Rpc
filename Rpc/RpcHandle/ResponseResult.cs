@@ -46,9 +46,17 @@ namespace Rpc.RpcHandle
 
 			var solveType = info.ReturnType;
 			//如果是task
-			if (solveType.IsGenericType && solveType.GetGenericTypeDefinition() == typeof(Task<>))
+			if (solveType == typeof(Task))
 			{
-				solveType = solveType.GetGenericArguments()[0];
+				if (solveType.IsGenericType && solveType.GetGenericTypeDefinition() == typeof(Task<>))
+				{
+					solveType = solveType.GetGenericArguments()[0];
+				}
+				else
+				{
+					Result = null;
+					return;
+				}
 			}
 
 			dataHeader = Util.Util.BytesToStruct<DataHeader>(data, offset);

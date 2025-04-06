@@ -87,9 +87,26 @@ namespace Rpc.RpcHandle
 			else
 			{
 				// 同步方法繼續使用Wait (這種方法同步是可接受的，因為它非async)
-				var task = CallAsync(e.MethodName, e.Args, ProcessTimeOutMs);
-				task.Wait(ProcessTimeOutMs);
-				e.ReturnObject = task.Result;
+				try
+				{
+					var task = CallAsync(e.MethodName, e.Args, ProcessTimeOutMs);
+					task.Wait(ProcessTimeOutMs);
+					e.ReturnObject = task.Result;
+				}
+				catch (Exception ex)
+				{
+					// 這裡可以處理異常
+					if (ex.InnerException != null)
+					{
+						throw ex.InnerException;
+					}
+					else
+					{
+						throw ex;
+					}
+				}
+
+
 			}
 		}
 

@@ -68,7 +68,49 @@ namespace Rpc.RpcHandle.Tests
 		}
 
 		[TestMethod()]
-		public void RpcTestAsync()
+		[DataRow(false)]
+		[DataRow(true)]
+		public void RpcTestAsync(bool throwExcept)
+		{
+			var server = new RpcServer<ITestConract>(new TestContract());
+			server.OnLine();
+			var client = new RpcClient<ITestConract>();
+			client.Connect();
+
+			client.ProcessTimeOutMs = 100 * 1000;
+			var result = client.Proxy.TaskTest(throwExcept);
+
+			bool except =false;
+			string exMsg = "";
+			try
+			{
+				result.Wait();
+			}
+			catch(Exception ex)
+			{
+				except = true;
+				exMsg = ex.Message;
+
+			}
+			Assert.IsTrue(except == throwExcept);
+			if (throwExcept)
+			{
+				Assert.IsTrue(exMsg.Contains("Test exception"));
+			}
+			else
+			{
+				Assert.IsTrue(exMsg == "");
+			}
+
+
+
+
+			server.Dispose();
+			client.Dispose();
+		}
+
+		[TestMethod()]
+		public void RpcTestAsyncInt()
 		{
 			var server = new RpcServer<ITestConract>(new TestContract());
 			server.OnLine();
@@ -117,6 +159,9 @@ namespace Rpc.RpcHandle.Tests
 
 		[OperationContract]
 		Task<int> GetIntAsync();
+
+
+		Task TaskTest(bool throwException);
 		
 		
 		int SomeProp { get; set; }
@@ -137,6 +182,13 @@ namespace Rpc.RpcHandle.Tests
 			
 
 			return Task.FromResult(1);
+		}
+
+		public Task TaskTest(bool throwException)
+		{
+			if (throwException)
+				throw new Exception("Test exception");
+			return Task.CompletedTask;
 		}
 
 		public void TestNoReturn(TestClass1 data)
